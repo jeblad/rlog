@@ -1,0 +1,358 @@
+/**
+ * RLog – A C++20 Localization and Reporting Utility
+ * Version 0.0.0-1-gec156a6-dirty
+ * Combined and generalized version of i18n, reporting, and logging.
+ **/
+
+#pragma once
+
+#define RLOG_VERSION_MAJOR 0
+#define RLOG_VERSION_MINOR 0
+#define RLOG_VERSION_PATCH 0
+#define RLOG_VERSION "0.0.0-1-gec156a6-dirty"
+
+#include <libintl.h>
+#include <syslog.h>
+#include <format>
+#include <string>
+#include <string_view>
+#include <iostream>
+#include <utility>
+#include <vector> // For rlog::Context
+#include <cstddef>
+#include <cstring>
+
+// --- SECTION 1: i18n (Internationalization) ---
+
+/**
+ * @def RLOG_GETTEXT(msgid)
+ * @brief Wrapper for the gettext function. 
+ * Can be redefined before including rlog.hpp to use dgettext for specific domains.
+ * @param msgid The English message identifier string.
+ */
+#ifndef RLOG_GETTEXT
+#define RLOG_GETTEXT(msgid) gettext(msgid)
+#endif
+
+/**
+ * @def RLOG_NGETTEXT(singular, plural, count)
+ * @brief Wrapper for the ngettext function.
+ * Can be redefined before including rlog.hpp to use dngettext for specific domains.
+ * @param singular The English singular form of the message.
+ * @param plural The English plural form of the message.
+ * @param count The numerical value used to determine the correct plural form.
+ */
+#ifndef RLOG_NGETTEXT
+#define RLOG_NGETTEXT(singular, plural, count) ngettext(singular, plural, count)
+#endif
+
+/**
+ * @brief Standard gettext shorthand macro.
+ * Maps to RLOG_GETTEXT.
+ */
+#undef _
+#define _(msg) RLOG_GETTEXT(msg)
+
+#undef n_
+#define n_(singular, plural, count) RLOG_NGETTEXT(singular, plural, count)
+
+#undef N_
+#define N_(msg) msg
+
+#undef fmt_
+#define fmt_(msg, ...) ::rlog::i18n::format(msg __VA_OPT__(,) __VA_ARGS__)
+
+#undef nfmt_
+#define nfmt_(singular, plural, count, ...) ::rlog::i18n::nformat(singular, plural, static_cast<std::size_t>(count) __VA_OPT__(,) __VA_ARGS__)
+
+/**
+ * @namespace rlog::i18n
+ * @brief Contains utility functions for internationalization and localized formatting.
+ */
+namespace rlog::i18n {
+    /**
+     * @brief Translates and formats a string using std::format.
+     * @tparam Args Variadic types of arguments to be formatted.
+     * @param format_id The English message identifier (the format string).
+     * @param args The values to be inserted into the format string.
+     * @return std::string The translated and formatted string.
+     */
+    template <typename... Args>
+    std::string format(const char* format_id, const Args&... args) {
+        return std::vformat(RLOG_GETTEXT(format_id), std::make_format_args(args...));
+    }
+
+    /**
+     * @brief Translates and formats a pluralized string using std::format.
+     * @tparam Args Variadic types of arguments to be formatted.
+     * @param singular The English singular form.
+     * @param plural The English plural form.
+     * @param n The numerical value used to determine the plural form.
+     * @param args The values to be inserted into the format string.
+     * @return std::string The correctly pluralized, translated, and formatted string.
+     */
+    template <typename... Args>
+    inline std::string nformat(
+        const char* singular,
+        const char* plural,
+        std::size_t n,
+        const Args&... args) {
+        const char* translated = RLOG_NGETTEXT(singular, plural, static_cast<unsigned long>(n));
+        return std::vformat(std::string_view(translated), std::make_format_args(args...));
+    }
+
+    /**
+     * @brief Formats a translated plural string using pre-erased format arguments.
+     * Used internally by macros to avoid double evaluation of arguments.
+     */
+    inline std::string vnformat(
+        const char* singular,
+        const char* plural,
+        std::size_t n,
+        std::format_args args) {
+        const char* translated = RLOG_NGETTEXT(singular, plural, static_cast<unsigned long>(n));
+        return std::vformat(std::string_view(translated), args);
+    }
+}
+
+// --- SECTION 2: Context Management (Thread-local) ---
+
+namespace rlog {
+    /**
+     * @brief Manages a thread-local stack of context elements for syslog prefixing.
+     * This allows for dynamic, hierarchical context in log messages.
+     */
+    class Context {
+        std::vector<std::string> context_stack_; ///< Stack of context elements.
+        std::string cached_prefix_;              ///< Cached combined prefix string.
+
+        /**
+         * @brief Rebuilds the cached syslog prefix string from the context stack.
+         */
+        void update_cached_prefix() {
+            cached_prefix_.clear();
+            if (context_stack_.empty()) {
+                return;
+            }
+            cached_prefix_ = context_stack_[0];
+            for (size_t i = 1; i < context_stack_.size(); ++i) {
+                cached_prefix_ += ":" + context_stack_[i];
+            }
+        }
+
+    public:
+        /**
+         * @brief The thread-local instance of the Context.
+         * Each thread will have its own independent context stack.
+         */
+        static thread_local Context instance_;
+
+        Context() = default;
+        Context(const Context&) = delete; // Context objects are not copyable
+        Context& operator=(const Context&) = delete; // Context objects are not assignable
+
+        /**
+         * @brief Pushes a new context element onto the stack.
+         * @param element The string_view representing the context element.
+         */
+        void push(std::string_view element) {
+            context_stack_.emplace_back(element);
+            update_cached_prefix();
+        }
+
+        /**
+         * @brief Pops the last context element from the stack.
+         */
+        void pop() {
+            if (!context_stack_.empty()) {
+                context_stack_.pop_back();
+                update_cached_prefix();
+            }
+        }
+
+        /**
+         * @brief Returns the combined, colon-separated syslog prefix.
+         */
+        const std::string& get_syslog_prefix() const { return cached_prefix_; }
+    };
+    thread_local Context Context::instance_; // Definition of the thread_local static member
+
+    /**
+     * @brief RAII helper for managing rlog context.
+     * Pushes a context element upon construction and pops it upon destruction.
+     */
+    class ContextGuard {
+        Context& ctx_; ///< Reference to the thread-local Context instance.
+    public:
+        /**
+         * @brief Constructs a ContextGuard, pushing an element onto the context stack.
+         * @param element The string_view representing the context element to push.
+         */
+        explicit ContextGuard(std::string_view element) : ctx_(Context::instance_) {
+            ctx_.push(element);
+        }
+
+        /**
+         * @brief Destroys the ContextGuard, popping the last element from the context stack.
+         */
+        ~ContextGuard() {
+            ctx_.pop();
+        }
+
+        // ContextGuard objects are not copyable or assignable
+        ContextGuard(const ContextGuard&) = delete;
+        ContextGuard& operator=(const ContextGuard&) = delete;
+    };
+}
+
+// --- SECTION 3: Reporting (Terminal output) ---
+
+namespace rlog {
+    /**
+     * @brief Accesses the global reporting level.
+     * @return int& Reference to the internal syslog priority level.
+     */
+    inline int& _report_level() {
+        static int level = LOG_NOTICE;
+        return level;
+    }
+
+    /**
+     * @brief Sets the reporting threshold for terminal output.
+     * @param level The minimum syslog priority level (e.g., LOG_INFO) to be displayed.
+     */
+    inline void openreport(int level) {
+        _report_level() = level;
+    }
+
+    /**
+     * @brief Core reporting function that writes to stdout or stderr.
+     * Filters output based on the level set via openreport().
+     * @tparam Args Variadic types of arguments to be formatted.
+     * @param level The syslog priority level of the message.
+     * @param fmt The format string.
+     * @param args The values to be formatted.
+     */
+    template <typename... Args>
+    void report(int level, std::string_view fmt, const Args&... args) {
+        if (level <= _report_level()) {
+            auto& stream = (level <= LOG_WARNING) ? std::cerr : std::cout;
+            stream << std::vformat(fmt, std::make_format_args(args...)) << std::endl;
+        }
+    }
+
+    // Level-specific direct reporting functions
+    template <typename... Args> void emergency(std::string_view f, const Args&... a) { report(LOG_EMERG, f, a...); }
+    template <typename... Args> void alert(std::string_view f, const Args&... a)     { report(LOG_ALERT, f, a...); }
+    template <typename... Args> void critical(std::string_view f, const Args&... a)  { report(LOG_CRIT, f, a...); }
+    template <typename... Args> void error(std::string_view f, const Args&... a)     { report(LOG_ERR, f, a...); }
+    template <typename... Args> void warning(std::string_view f, const Args&... a)   { report(LOG_WARNING, f, a...); }
+    template <typename... Args> void notice(std::string_view f, const Args&... a)    { report(LOG_NOTICE, f, a...); }
+    template <typename... Args> void info(std::string_view f, const Args&... a)      { report(LOG_INFO, f, a...); }
+    template <typename... Args> void debug(std::string_view f, const Args&... a)     { report(LOG_DEBUG, f, a...); }
+}
+
+// --- SECTION 4: Logging (Macros & Syslog) ---
+
+namespace rlog::detail {
+    /**
+     * @brief Helper to normalize string types for C-style API calls like syslog.
+     * @param input Raw character pointer.
+     * @return const char* The raw pointer.
+     */
+    inline const char* to_c_str(const char* input) { return input; }
+    
+    /**
+     * @brief Helper to normalize string types for C-style API calls like syslog.
+     * @param input C++ string object.
+     * @return const char* The underlying C-string.
+     */
+    inline const char* to_c_str(const std::string& input) { return input.c_str(); }
+}
+
+#define RLOG_DO(level, msg) \
+    do { \
+        ::syslog((level), "%s: %s", \
+            ::rlog::Context::instance_.get_syslog_prefix().c_str(), \
+            ::rlog::detail::to_c_str(msg)); \
+        ::rlog::report((level), "{}", _(msg)); \
+    } while (0)
+
+#define RLOG_FMT_DO(level, msg, ...) \
+    do { \
+        [&](auto const&... rlog_tmp_args) { \
+            auto rlog_args = ::std::make_format_args(rlog_tmp_args...); \
+            /* 1. Log original English to syslog */ \
+            ::syslog((level), "%s: %s", \
+                ::rlog::Context::instance_.get_syslog_prefix().c_str(), \
+                ::std::vformat((msg), rlog_args).c_str()); \
+            /* 2. Log translated to terminal */ \
+            ::rlog::report((level), "{}", \
+                ::std::vformat(RLOG_GETTEXT(msg), rlog_args)); \
+        }(__VA_ARGS__); \
+    } while (0)
+
+#define RLOG_N_DO(level, singular, plural, count) \
+    do { \
+        auto rlog_tmp_n = (count); \
+        const char* eng_msg = (rlog_tmp_n == 1) ? (singular) : (plural); \
+        ::syslog((level), "%s: %s", \
+            ::rlog::Context::instance_.get_syslog_prefix().c_str(), \
+            ::rlog::detail::to_c_str(eng_msg)); \
+        ::rlog::report((level), "{}", n_((singular), (plural), (rlog_tmp_n))); \
+    } while (0)
+
+#define RLOG_NFMT_DO(level, singular, plural, count, ...) \
+    do { \
+        auto rlog_tmp_n = static_cast<std::size_t>(count); \
+        [&](auto const&... rlog_tmp_args) { \
+            auto rlog_args = ::std::make_format_args(rlog_tmp_args...); \
+            const char* eng_fmt = (rlog_tmp_n == 1) ? (singular) : (plural); \
+            ::syslog((level), "%s: %s", \
+                ::rlog::Context::instance_.get_syslog_prefix().c_str(), \
+                ::std::vformat(eng_fmt, rlog_args).c_str()); \
+            ::rlog::report((level), "{}", ::rlog::i18n::vnformat(singular, plural, rlog_tmp_n, rlog_args)); \
+        }(__VA_ARGS__); \
+    } while (0)
+
+// --- Level-specific macros (Mapping to original names) ---
+
+#define EMERGENCY_(msg)              RLOG_DO(LOG_EMERG, msg)
+#define EMERGENCY_FMT_(msg, ...)     RLOG_FMT_DO(LOG_EMERG, msg, __VA_ARGS__)
+#define EMERGENCY_N_(singular, plural, count)        RLOG_N_DO(LOG_EMERG, singular, plural, count)
+#define EMERGENCY_NFMT_(singular, plural, count, ...) RLOG_NFMT_DO(LOG_EMERG, singular, plural, count, __VA_ARGS__)
+
+#define ALERT_(msg)                  RLOG_DO(LOG_ALERT, msg)
+#define ALERT_FMT_(msg, ...)         RLOG_FMT_DO(LOG_ALERT, msg, __VA_ARGS__)
+#define ALERT_N_(singular, plural, count)            RLOG_N_DO(LOG_ALERT, singular, plural, count)
+#define ALERT_NFMT_(singular, plural, count, ...)    RLOG_NFMT_DO(LOG_ALERT, singular, plural, count, __VA_ARGS__)
+
+#define CRITICAL_(msg)               RLOG_DO(LOG_CRIT, msg)
+#define CRITICAL_FMT_(msg, ...)      RLOG_FMT_DO(LOG_CRIT, msg, __VA_ARGS__)
+#define CRITICAL_N_(singular, plural, count)         RLOG_N_DO(LOG_CRIT, singular, plural, count)
+#define CRITICAL_NFMT_(singular, plural, count, ...) RLOG_NFMT_DO(LOG_CRIT, singular, plural, count, __VA_ARGS__)
+
+#define ERROR_(msg)                  RLOG_DO(LOG_ERR, msg)
+#define ERROR_FMT_(msg, ...)         RLOG_FMT_DO(LOG_ERR, msg, __VA_ARGS__)
+#define ERROR_N_(singular, plural, count)            RLOG_N_DO(LOG_ERR, singular, plural, count)
+#define ERROR_NFMT_(singular, plural, count, ...)    RLOG_NFMT_DO(LOG_ERR, singular, plural, count, __VA_ARGS__)
+
+#define WARNING_(msg)                RLOG_DO(LOG_WARNING, msg)
+#define WARNING_FMT_(msg, ...)       RLOG_FMT_DO(LOG_WARNING, msg, __VA_ARGS__)
+#define WARNING_N_(singular, plural, count)          RLOG_N_DO(LOG_WARNING, singular, plural, count)
+#define WARNING_NFMT_(singular, plural, count, ...)  RLOG_NFMT_DO(LOG_WARNING, singular, plural, count, __VA_ARGS__)
+
+#define NOTICE_(msg)                 RLOG_DO(LOG_NOTICE, msg)
+#define NOTICE_FMT_(msg, ...)        RLOG_FMT_DO(LOG_NOTICE, msg, __VA_ARGS__)
+#define NOTICE_N_(singular, plural, count)           RLOG_N_DO(LOG_NOTICE, singular, plural, count)
+#define NOTICE_NFMT_(singular, plural, count, ...)   RLOG_NFMT_DO(LOG_NOTICE, singular, plural, count, __VA_ARGS__)
+
+#define INFO_(msg)                   RLOG_DO(LOG_INFO, msg)
+#define INFO_FMT_(msg, ...)          RLOG_FMT_DO(LOG_INFO, msg, __VA_ARGS__)
+#define INFO_N_(singular, plural, count)             RLOG_N_DO(LOG_INFO, singular, plural, count)
+#define INFO_NFMT_(singular, plural, count, ...)     RLOG_NFMT_DO(LOG_INFO, singular, plural, count, __VA_ARGS__)
+
+#define DEBUG_(msg)                  RLOG_DO(LOG_DEBUG, msg)
+#define DEBUG_FMT_(msg, ...)         RLOG_FMT_DO(LOG_DEBUG, msg, __VA_ARGS__)
+#define DEBUG_N_(singular, plural, count)            RLOG_N_DO(LOG_DEBUG, singular, plural, count)
+#define DEBUG_NFMT_(singular, plural, count, ...)    RLOG_NFMT_DO(LOG_DEBUG, singular, plural, count, __VA_ARGS__)
