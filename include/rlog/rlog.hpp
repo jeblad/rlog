@@ -1,15 +1,15 @@
 /**
  * RLog – A C++20 Localization and Reporting Utility
- * Version 0.0.0-0-unknown
+ * Version 0.1.0-dirty
  * Combined and generalized version of i18n, reporting, and logging.
  **/
 
 #pragma once
 
 #define RLOG_VERSION_MAJOR 0
-#define RLOG_VERSION_MINOR 0
+#define RLOG_VERSION_MINOR 1
 #define RLOG_VERSION_PATCH 0
-#define RLOG_VERSION "0.0.0-0-unknown"
+#define RLOG_VERSION "0.1.0-dirty"
 
 #include <libintl.h>
 #include <syslog.h>
@@ -134,9 +134,15 @@ namespace rlog {
             if (context_stack_.empty()) {
                 return;
             }
-            cached_prefix_ = context_stack_[0];
-            for (size_t i = 1; i < context_stack_.size(); ++i) {
-                cached_prefix_ += ":" + context_stack_[i];
+
+            size_t total_size = 0;
+            for (const auto& s : context_stack_) total_size += s.size();
+            if (!context_stack_.empty()) total_size += context_stack_.size() - 1;
+
+            cached_prefix_.reserve(total_size);
+            for (size_t i = 0; i < context_stack_.size(); ++i) {
+                if (i > 0) cached_prefix_ += ':';
+                cached_prefix_ += context_stack_[i];
             }
         }
 
