@@ -137,7 +137,7 @@ namespace rlog {
 
             size_t total_size = 0;
             for (const auto& s : context_stack_) total_size += s.size();
-            if (!context_stack_.empty()) total_size += context_stack_.size() - 1;
+            total_size += context_stack_.size() - 1; // Colons
 
             cached_prefix_.reserve(total_size);
             for (size_t i = 0; i < context_stack_.size(); ++i) {

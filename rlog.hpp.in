@@ -134,9 +134,15 @@ namespace rlog {
             if (context_stack_.empty()) {
                 return;
             }
-            cached_prefix_ = context_stack_[0];
-            for (size_t i = 1; i < context_stack_.size(); ++i) {
-                cached_prefix_ += ":" + context_stack_[i];
+
+            size_t total_size = 0;
+            for (const auto& s : context_stack_) total_size += s.size();
+            total_size += context_stack_.size() - 1; // Colons
+
+            cached_prefix_.reserve(total_size);
+            for (size_t i = 0; i < context_stack_.size(); ++i) {
+                if (i > 0) cached_prefix_ += ':';
+                cached_prefix_ += context_stack_[i];
             }
         }
 

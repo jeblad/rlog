@@ -1,37 +1,26 @@
 cmake_minimum_required(VERSION 3.28)
-project(rlog VERSION 0.0.0 LANGUAGES CXX)
+project(rlog VERSION 0.1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # --- Git Versioning Logic ---
 find_package(Git QUIET)
-set(RLOG_FULL_VERSION "${PROJECT_VERSION}-0-unknown")
+set(RLOG_FULL_VERSION "${PROJECT_VERSION}")
 set(RLOG_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
 set(RLOG_VERSION_MINOR ${PROJECT_VERSION_MINOR})
 set(RLOG_VERSION_PATCH ${PROJECT_VERSION_PATCH})
 
 if(Git_FOUND)
     execute_process(
-        COMMAND ${GIT_EXECUTABLE} describe --tags --always --long --dirty
+        COMMAND ${GIT_EXECUTABLE} describe --tags --always --dirty
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         OUTPUT_VARIABLE GIT_VERSION
         ERROR_QUIET
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
 
-    # Regex for å parse v1.2.3-4-gabc123[-dirty]
-    # Match 1: Major, 2: Minor, 3: Patch, 4: Count, 5: Hash, 6: Dirty
-    if(GIT_VERSION MATCHES "^v?([0-9]+)\\.([0-9]+)\\.([0-9]+)-([0-9]+)-(g[0-9a-f]+)((-dirty)?)$")
-        set(RLOG_VERSION_MAJOR ${CMAKE_MATCH_1})
-        set(RLOG_VERSION_MINOR ${CMAKE_MATCH_2})
-        set(RLOG_VERSION_PATCH ${CMAKE_MATCH_3})
-        set(RLOG_FULL_VERSION "${RLOG_VERSION_MAJOR}.${RLOG_VERSION_MINOR}.${RLOG_VERSION_PATCH}-${CMAKE_MATCH_4}-${CMAKE_MATCH_5}${CMAKE_MATCH_6}")
-    endif()
-endif()
-
-# --- Git Hook Automation ---
-if(Git_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
+    # Git Hook Automation
     set(HOOK_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/scripts/pre-commit.sh")
     set(HOOK_DEST "${CMAKE_CURRENT_SOURCE_DIR}/.git/hooks/pre-commit")
     
@@ -42,8 +31,12 @@ if(Git_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
         else()
             execute_process(COMMAND ${CMAKE_COMMAND} -E copy "${HOOK_SOURCE}" "${HOOK_DEST}")
         endif()
-        
         message(STATUS "Git pre-commit hook installed/updated.")
+    endif()
+
+    # For Conventional Commits, we trust PROJECT_VERSION but append -dirty if applicable
+    if(GIT_VERSION MATCHES "dirty$")
+        set(RLOG_FULL_VERSION "${RLOG_FULL_VERSION}-dirty")
     endif()
 endif()
 
@@ -61,7 +54,7 @@ target_include_directories(rlog INTERFACE
 
 # Dependencies
 find_package(Intl REQUIRED)
-target_link_libraries(rlog INTERFACE ${Intl_LIBRARY})
+target_link_libraries(rlog INTERFACE ${Intl_LIBRARIES})
 
 # Tests
 option(RLOG_BUILD_TESTS "Build rlog unit tests" ON)
