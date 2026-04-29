@@ -1,6 +1,6 @@
 /**
  * RLog – A C++20 Localization and Reporting Utility
- * Version 0.0.0-1-gec156a6-dirty
+ * Version 0.0.0-3-gc6a8ad1-dirty
  * Combined and generalized version of i18n, reporting, and logging.
  **/
 
@@ -9,7 +9,7 @@
 #define RLOG_VERSION_MAJOR 0
 #define RLOG_VERSION_MINOR 0
 #define RLOG_VERSION_PATCH 0
-#define RLOG_VERSION "0.0.0-1-gec156a6-dirty"
+#define RLOG_VERSION "0.0.0-3-gc6a8ad1-dirty"
 
 #include <libintl.h>
 #include <syslog.h>
