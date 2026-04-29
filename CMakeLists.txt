@@ -38,6 +38,7 @@ if(Git_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
     if(EXISTS "${HOOK_SOURCE}")
         if(UNIX)
             execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink "${HOOK_SOURCE}" "${HOOK_DEST}")
+            file(CHMOD "${HOOK_SOURCE}" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
         else()
             execute_process(COMMAND ${CMAKE_COMMAND} -E copy "${HOOK_SOURCE}" "${HOOK_DEST}")
         endif()
@@ -82,7 +83,7 @@ if(RLOG_BUILD_TESTS)
 endif()
 
 install(TARGETS rlog EXPORT rlogTargets)
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/include/rlog/rlog.hpp" DESTINATION include/rlog)
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/include/rlog/rlog.hpp" DESTINATION include/rlog)
 install(EXPORT rlogTargets
     FILE rlogConfig.cmake
     DESTINATION lib/cmake/rlog)
