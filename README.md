@@ -15,6 +15,7 @@ Terminal reports are localized using `gettext` to provide a user-friendly experi
 * **Dual-Destination Reporting:** Routes messages to both the terminal and `syslog` with a single macro call, ensuring consistency between user feedback and system logs.
 * **Intelligent Localization:** Leverages GNU Gettext to provide localized terminal output while strictly maintaining English for system logs to ensure searchability.
 * **Modern C++20 Formatting:** Fully integrates with `std::format` and `std::vformat` for high-performance, type-safe string formatting.
+* **Optional Context Tracing:** Provides diagnostic "entering" and "leaving" messages for `ContextGuard` scopes, simplifying the debugging of hierarchical logic.
 * **Hierarchical Context Stack:** Automatically enriches `syslog` entries with a dynamic stack of context elements (e.g., command name, dataset ID, function name), managed via RAII guards.
 * **Robust Pluralization:** Comprehensive support for complex plural forms through integrated `ngettext` and `dngettext` wrappers.
 * **Extensible Domains:** Designed for modular architectures, allowing plugins or extensions to define their own translation domains independently of the host.
