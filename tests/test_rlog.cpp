@@ -74,11 +74,11 @@ void test_macros_compilation() {
 
     {
         rlog::ContextGuard app_ctx("test-app");
-        assert(rlog::Context::instance_.get_syslog_prefix() == "test-app");
+        assert(rlog::Context::instance().get_syslog_prefix() == "test-app");
 
         {
             rlog::ContextGuard sub_ctx("worker-1");
-            assert(rlog::Context::instance_.get_syslog_prefix() == "test-app:worker-1");
+            assert(rlog::Context::instance().get_syslog_prefix() == "test-app:worker-1");
 
             // These call syslog. We verify they compile and handle dynamic context.
             NOTICE_("Testing notice macro");
@@ -86,9 +86,9 @@ void test_macros_compilation() {
             ERROR_N_("Singular error", "Plural errors", 1);
         }
 
-        assert(rlog::Context::instance_.get_syslog_prefix() == "test-app");
+        assert(rlog::Context::instance().get_syslog_prefix() == "test-app");
     }
-    assert(rlog::Context::instance_.get_syslog_prefix().empty());
+    assert(rlog::Context::instance().get_syslog_prefix().empty());
 }
 
 void test_context_tracing() {

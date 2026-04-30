@@ -4,7 +4,7 @@
  */
 /**
  * RLog – A C++20 Localization and Reporting Utility
- * Version 0.1.0-dirty
+ * Version v0.0.4-dirty
  * Combined and generalized version of i18n, reporting, and logging.
  **/
 
@@ -13,7 +13,7 @@
 #define RLOG_VERSION_MAJOR 0
 #define RLOG_VERSION_MINOR 1
 #define RLOG_VERSION_PATCH 0
-#define RLOG_VERSION "0.1.0-dirty"
+#define RLOG_VERSION "v0.0.4-dirty"
 
 #include <libintl.h>
 #include <syslog.h>
@@ -199,13 +199,18 @@ namespace rlog {
             }
         }
 
+    private:
+        // Removed direct static thread_local member to use a static accessor method
+
     public:
         /**
          * @brief The thread-local instance of the Context.
          * Each thread will have its own independent context stack.
          */
-        inline static thread_local Context instance_;
-
+        static Context& instance() {
+            static thread_local Context inst;
+            return inst;
+        }
         /**
          * @brief Internal toggle for tracing context entry/exit.
          */
@@ -223,10 +228,6 @@ namespace rlog {
         Context(const Context&) = delete; // Context objects are not copyable
         Context& operator=(const Context&) = delete; // Context objects are not assignable
 
-        /**
-         * @brief Pushes a new context element onto the stack.
-         * @param element The string_view representing the context element.
-         */
         void push(std::string_view element) {
             context_stack_.emplace_back(element);
             update_cached_prefix();
@@ -260,8 +261,8 @@ namespace rlog {
          * @brief Constructs a ContextGuard, pushing an element onto the context stack.
          * @param element The string_view representing the context element to push.
          */
-        explicit ContextGuard(std::string_view element) 
-            : ctx_(Context::instance_), element_(element) 
+        explicit ContextGuard(std::string_view element)
+            : ctx_(Context::instance()), element_(element)
         {
             if (Context::_trace_enabled()) {
                 debug("entering: {}", element_);
@@ -313,7 +314,7 @@ namespace rlog::detail {
 #define RLOG_DO(level, msg) \
     do { \
         ::syslog((level), "%s: %s", \
-            ::rlog::Context::instance_.get_syslog_prefix().c_str(), \
+            ::rlog::Context::instance().get_syslog_prefix().c_str(), \
             ::rlog::detail::to_c_str(msg)); \
         ::rlog::report((level), "{}", _(msg)); \
     } while (0)
@@ -324,7 +325,7 @@ namespace rlog::detail {
             auto rlog_args = ::std::make_format_args(rlog_tmp_args...); \
             /* 1. Log original English to syslog */ \
             ::syslog((level), "%s: %s", \
-                ::rlog::Context::instance_.get_syslog_prefix().c_str(), \
+                ::rlog::Context::instance().get_syslog_prefix().c_str(), \
                 ::std::vformat((msg), rlog_args).c_str()); \
             /* 2. Log translated to terminal */ \
             ::rlog::report((level), "{}", \
@@ -337,7 +338,7 @@ namespace rlog::detail {
         auto rlog_tmp_n = (count); \
         const char* eng_msg = (rlog_tmp_n == 1) ? (singular) : (plural); \
         ::syslog((level), "%s: %s", \
-            ::rlog::Context::instance_.get_syslog_prefix().c_str(), \
+            ::rlog::Context::instance().get_syslog_prefix().c_str(), \
             ::rlog::detail::to_c_str(eng_msg)); \
         ::rlog::report((level), "{}", n_((singular), (plural), (rlog_tmp_n))); \
     } while (0)
@@ -349,7 +350,7 @@ namespace rlog::detail {
             auto rlog_args = ::std::make_format_args(rlog_tmp_args...); \
             const char* eng_fmt = (rlog_tmp_n == 1) ? (singular) : (plural); \
             ::syslog((level), "%s: %s", \
-                ::rlog::Context::instance_.get_syslog_prefix().c_str(), \
+                ::rlog::Context::instance().get_syslog_prefix().c_str(), \
                 ::std::vformat(eng_fmt, rlog_args).c_str()); \
             ::rlog::report((level), "{}", ::rlog::i18n::vnformat(singular, plural, rlog_tmp_n, rlog_args)); \
         }(__VA_ARGS__); \

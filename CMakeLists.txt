@@ -20,6 +20,10 @@ if(Git_FOUND)
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
 
+    if(GIT_VERSION)
+        set(RLOG_FULL_VERSION "${GIT_VERSION}")
+    endif()
+
     # Git Hook Automation
     set(HOOK_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/scripts/pre-commit.sh")
     set(HOOK_DEST "${CMAKE_CURRENT_SOURCE_DIR}/.git/hooks/pre-commit")
@@ -34,10 +38,6 @@ if(Git_FOUND)
         message(STATUS "Git pre-commit hook installed/updated.")
     endif()
 
-    # For Conventional Commits, we trust PROJECT_VERSION but append -dirty if applicable
-    if(GIT_VERSION MATCHES "dirty$")
-        set(RLOG_FULL_VERSION "${RLOG_FULL_VERSION}-dirty")
-    endif()
 endif()
 
 # Generate the header file directly in the source include directory
