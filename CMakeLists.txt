@@ -41,14 +41,28 @@ if(Git_FOUND)
 endif()
 
 # Generate the header file directly in the source include directory
-configure_file(rlog.hpp.in "${CMAKE_CURRENT_SOURCE_DIR}/include/rlog/rlog.hpp" @ONLY)
+set(RLOG_SOURCE_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/include/rlog/rlog.hpp")
+set(RLOG_BINARY_HEADER "${CMAKE_CURRENT_BINARY_DIR}/include/rlog/rlog.hpp")
+
+# 1. Generate the header file in the source directory (the "master" for distribution)
+configure_file(rlog.hpp.in "${RLOG_SOURCE_HEADER}" @ONLY)
+
+# 2. Ensure the build include directory exists
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/include/rlog")
+
+# 3. Create a symbolic link in the build directory; fallback to copy on non-Unix systems
+if(UNIX)
+    file(CREATE_LINK "${RLOG_SOURCE_HEADER}" "${RLOG_BINARY_HEADER}" SYMBOLIC)
+else()
+    file(CREATE_LINK "${RLOG_SOURCE_HEADER}" "${RLOG_BINARY_HEADER}" COPY)
+endif()
 
 # Header-only library target
 add_library(rlog INTERFACE)
 add_library(rlog::rlog ALIAS rlog)
 
 target_include_directories(rlog INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
     $<INSTALL_INTERFACE:include>
 )
 
