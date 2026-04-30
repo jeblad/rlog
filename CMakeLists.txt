@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.28)
-project(rlog VERSION 0.1.0 LANGUAGES CXX)
+
+# Read version from package.json
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/package.json" PACKAGE_JSON_CONTENT)
+string(JSON PROJECT_VERSION_FROM_PACKAGE_JSON GET "${PACKAGE_JSON_CONTENT}" "version")
+
+project(rlog VERSION ${PROJECT_VERSION_FROM_PACKAGE_JSON} LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -20,7 +25,9 @@ if(Git_FOUND)
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
 
-    if(GIT_VERSION)
+    # Only use GIT_VERSION for the full version string if it is not "dirty".
+    # This prevents the release commit from being tagged as "dirty" in the header.
+    if(GIT_VERSION AND NOT GIT_VERSION MATCHES "dirty")
         set(RLOG_FULL_VERSION "${GIT_VERSION}")
     endif()
 

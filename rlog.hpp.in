@@ -255,7 +255,7 @@ namespace rlog {
      */
     class ContextGuard {
         Context& ctx_; ///< Reference to the thread-local Context instance.
-        std::string_view element_; ///< The element being guarded.
+        std::string element_; ///< The element being guarded, stored as string for destructor safety.
     public:
         /**
          * @brief Constructs a ContextGuard, pushing an element onto the context stack.

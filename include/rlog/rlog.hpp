@@ -4,16 +4,16 @@
  */
 /**
  * RLog – A C++20 Localization and Reporting Utility
- * Version v0.0.4-dirty
+ * Version 0.0.4
  * Combined and generalized version of i18n, reporting, and logging.
  **/
 
 #pragma once
 
 #define RLOG_VERSION_MAJOR 0
-#define RLOG_VERSION_MINOR 1
-#define RLOG_VERSION_PATCH 0
-#define RLOG_VERSION "v0.0.4-dirty"
+#define RLOG_VERSION_MINOR 0
+#define RLOG_VERSION_PATCH 4
+#define RLOG_VERSION "0.0.4"
 
 #include <libintl.h>
 #include <syslog.h>
@@ -255,7 +255,7 @@ namespace rlog {
      */
     class ContextGuard {
         Context& ctx_; ///< Reference to the thread-local Context instance.
-        std::string_view element_; ///< The element being guarded.
+        std::string element_; ///< The element being guarded, stored as string for destructor safety.
     public:
         /**
          * @brief Constructs a ContextGuard, pushing an element onto the context stack.

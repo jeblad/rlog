@@ -1,0 +1,5 @@
+{
+  "scripts": {
+    "postbump": "NEW_VERSION=$(node -p \"require('./package.json').version\") && sed -i \"s/project(rlog VERSION [0-9.]*/project(rlog VERSION ${NEW_VERSION}/\" CMakeLists.txt && cmake -B build -S . && git add include/rlog/rlog.hpp CMakeLists.txt"
+  }
+}
