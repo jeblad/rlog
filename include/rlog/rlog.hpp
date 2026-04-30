@@ -4,7 +4,7 @@
  */
 /**
  * RLog – A C++20 Localization and Reporting Utility
- * Version 0.0.5
+ * Version 0.0.6
  * Combined and generalized version of i18n, reporting, and logging.
  **/
 
@@ -12,8 +12,8 @@
 
 #define RLOG_VERSION_MAJOR 0
 #define RLOG_VERSION_MINOR 0
-#define RLOG_VERSION_PATCH 5
-#define RLOG_VERSION "0.0.5"
+#define RLOG_VERSION_PATCH 6
+#define RLOG_VERSION "0.0.6"
 
 #include <libintl.h>
 #include <syslog.h>
