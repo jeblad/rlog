@@ -191,7 +191,7 @@ namespace rlog {
             cached_prefix_.reserve(total_size);
             for (size_t i = 0; i < context_stack_.size(); ++i) {
                 if (i > 0) cached_prefix_ += ':';
-                cached_prefix_ += context_stack_[i];
+                cached_prefix_.append(context_stack_[i]);
             }
         }
 
