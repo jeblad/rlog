@@ -1,0 +1,2 @@
+# Exclude the generated header from AI editing to prevent loss of manual changes
+include/rlog/rlog.hpp
