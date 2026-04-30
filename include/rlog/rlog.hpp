@@ -115,103 +115,7 @@ namespace rlog::i18n {
     }
 }
 
-// --- SECTION 2: Context Management (Thread-local) ---
-
-namespace rlog {
-    /**
-     * @brief Manages a thread-local stack of context elements for syslog prefixing.
-     * This allows for dynamic, hierarchical context in log messages.
-     */
-    class Context {
-        std::vector<std::string> context_stack_; ///< Stack of context elements.
-        std::string cached_prefix_;              ///< Cached combined prefix string.
-
-        /**
-         * @brief Rebuilds the cached syslog prefix string from the context stack.
-         */
-        void update_cached_prefix() {
-            cached_prefix_.clear();
-            if (context_stack_.empty()) {
-                return;
-            }
-
-            size_t total_size = 0;
-            for (const auto& s : context_stack_) total_size += s.size();
-            total_size += context_stack_.size() - 1; // Colons
-
-            cached_prefix_.reserve(total_size);
-            for (size_t i = 0; i < context_stack_.size(); ++i) {
-                if (i > 0) cached_prefix_ += ':';
-                cached_prefix_ += context_stack_[i];
-            }
-        }
-
-    public:
-        /**
-         * @brief The thread-local instance of the Context.
-         * Each thread will have its own independent context stack.
-         */
-        static thread_local Context instance_;
-
-        Context() = default;
-        Context(const Context&) = delete; // Context objects are not copyable
-        Context& operator=(const Context&) = delete; // Context objects are not assignable
-
-        /**
-         * @brief Pushes a new context element onto the stack.
-         * @param element The string_view representing the context element.
-         */
-        void push(std::string_view element) {
-            context_stack_.emplace_back(element);
-            update_cached_prefix();
-        }
-
-        /**
-         * @brief Pops the last context element from the stack.
-         */
-        void pop() {
-            if (!context_stack_.empty()) {
-                context_stack_.pop_back();
-                update_cached_prefix();
-            }
-        }
-
-        /**
-         * @brief Returns the combined, colon-separated syslog prefix.
-         */
-        const std::string& get_syslog_prefix() const { return cached_prefix_; }
-    };
-    thread_local Context Context::instance_; // Definition of the thread_local static member
-
-    /**
-     * @brief RAII helper for managing rlog context.
-     * Pushes a context element upon construction and pops it upon destruction.
-     */
-    class ContextGuard {
-        Context& ctx_; ///< Reference to the thread-local Context instance.
-    public:
-        /**
-         * @brief Constructs a ContextGuard, pushing an element onto the context stack.
-         * @param element The string_view representing the context element to push.
-         */
-        explicit ContextGuard(std::string_view element) : ctx_(Context::instance_) {
-            ctx_.push(element);
-        }
-
-        /**
-         * @brief Destroys the ContextGuard, popping the last element from the context stack.
-         */
-        ~ContextGuard() {
-            ctx_.pop();
-        }
-
-        // ContextGuard objects are not copyable or assignable
-        ContextGuard(const ContextGuard&) = delete;
-        ContextGuard& operator=(const ContextGuard&) = delete;
-    };
-}
-
-// --- SECTION 3: Reporting (Terminal output) ---
+// --- SECTION 2: Reporting (Terminal output) ---
 
 namespace rlog {
     /**
@@ -256,6 +160,133 @@ namespace rlog {
     template <typename... Args> void notice(std::string_view f, const Args&... a)    { report(LOG_NOTICE, f, a...); }
     template <typename... Args> void info(std::string_view f, const Args&... a)      { report(LOG_INFO, f, a...); }
     template <typename... Args> void debug(std::string_view f, const Args&... a)     { report(LOG_DEBUG, f, a...); }
+}
+
+// --- SECTION 3: Context Management (Thread-local) ---
+
+namespace rlog {
+    /**
+     * @brief Manages a thread-local stack of context elements for syslog prefixing.
+     * This allows for dynamic, hierarchical context in log messages.
+     */
+    class Context {
+        std::vector<std::string> context_stack_; ///< Stack of context elements.
+        std::string cached_prefix_;              ///< Cached combined prefix string.
+
+        /**
+         * @brief Rebuilds the cached syslog prefix string from the context stack.
+         */
+        void update_cached_prefix() {
+            if (context_stack_.empty()) {
+                cached_prefix_.clear();
+                return;
+            }
+
+            size_t total_size = context_stack_.size() - 1; // Plass til kolon
+            for (const auto& s : context_stack_) {
+                total_size += s.size();
+            }
+
+            cached_prefix_.clear();
+            cached_prefix_.reserve(total_size);
+            for (size_t i = 0; i < context_stack_.size(); ++i) {
+                if (i > 0) cached_prefix_ += ':';
+                cached_prefix_ += context_stack_[i];
+            }
+        }
+
+    public:
+        /**
+         * @brief The thread-local instance of the Context.
+         * Each thread will have its own independent context stack.
+         */
+        static thread_local Context instance_;
+
+        /**
+         * @brief Internal toggle for tracing context entry/exit.
+         */
+        static bool& _trace_enabled() {
+            static bool enabled = false;
+            return enabled;
+        }
+
+        /**
+         * @brief Enables or disables tracing of context entry and exit.
+         */
+        static void set_trace(bool enabled) { _trace_enabled() = enabled; }
+
+        Context() = default;
+        Context(const Context&) = delete; // Context objects are not copyable
+        Context& operator=(const Context&) = delete; // Context objects are not assignable
+
+        /**
+         * @brief Pushes a new context element onto the stack.
+         * @param element The string_view representing the context element.
+         */
+        void push(std::string_view element) {
+            context_stack_.emplace_back(element);
+            update_cached_prefix();
+        }
+
+        /**
+         * @brief Pops the last context element from the stack.
+         */
+        void pop() {
+            if (!context_stack_.empty()) {
+                context_stack_.pop_back();
+                update_cached_prefix();
+            }
+        }
+
+        /**
+         * @brief Returns the combined, colon-separated syslog prefix.
+         */
+        const std::string& get_syslog_prefix() const { return cached_prefix_; }
+    };
+    thread_local Context Context::instance_; // Definition of the thread_local static member
+
+    /**
+     * @brief RAII helper for managing rlog context.
+     * Pushes a context element upon construction and pops it upon destruction.
+     */
+    class ContextGuard {
+        Context& ctx_; ///< Reference to the thread-local Context instance.
+        std::string_view element_; ///< The element being guarded.
+    public:
+        /**
+         * @brief Constructs a ContextGuard, pushing an element onto the context stack.
+         * @param element The string_view representing the context element to push.
+         */
+        explicit ContextGuard(std::string_view element) 
+            : ctx_(Context::instance_), element_(element) 
+        {
+            if (Context::_trace_enabled()) {
+                debug("entering: {}", element_);
+            }
+            ctx_.push(element);
+        }
+
+        /**
+         * @brief Destroys the ContextGuard, popping the last element from the context stack.
+         */
+        ~ContextGuard() {
+            ctx_.pop();
+            if (Context::_trace_enabled()) {
+                debug("leaving: {}", element_);
+            }
+        }
+
+        // ContextGuard objects are not copyable or assignable
+        ContextGuard(const ContextGuard&) = delete;
+        ContextGuard& operator=(const ContextGuard&) = delete;
+    };
+
+    /**
+     * @brief Public helper to enable or disable context tracing.
+     */
+    inline void opentrace(bool enabled) {
+        Context::set_trace(enabled);
+    }
 }
 
 // --- SECTION 4: Logging (Macros & Syslog) ---

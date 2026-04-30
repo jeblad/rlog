@@ -91,12 +91,51 @@ void test_macros_compilation() {
     assert(rlog::Context::instance_.get_syslog_prefix().empty());
 }
 
+void test_context_tracing() {
+    std::cout << "Testing context tracing..." << std::endl;
+
+    // 1. Test tracing enabled at LOG_DEBUG
+    rlog::openreport(LOG_DEBUG);
+    rlog::opentrace(true);
+    {
+        StdoutCapture cap;
+        {
+            rlog::ContextGuard trace_ctx("trace-me");
+        }
+        std::string out = cap.str();
+        assert(out.find("entering: trace-me") != std::string::npos);
+        assert(out.find("leaving: trace-me") != std::string::npos);
+    }
+
+    // 2. Test tracing disabled
+    rlog::opentrace(false);
+    {
+        StdoutCapture cap;
+        {
+            rlog::ContextGuard no_trace_ctx("no-trace");
+        }
+        assert(cap.str().empty());
+    }
+
+    // 3. Test tracing enabled but report level too low (LOG_INFO < LOG_DEBUG)
+    rlog::opentrace(true);
+    rlog::openreport(LOG_INFO);
+    {
+        StdoutCapture cap;
+        {
+            rlog::ContextGuard hidden_trace_ctx("hidden");
+        }
+        assert(cap.str().empty());
+    }
+}
+
 int main() {
     test_version();
     test_detail_helpers();
     test_report_levels();
     test_formatting();
     test_macros_compilation();
+    test_context_tracing();
     
     std::cout << "\nAll rlog tests passed!" << std::endl;
     return 0;
