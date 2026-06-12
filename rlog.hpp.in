@@ -397,3 +397,22 @@ namespace rlog::detail {
 #define DEBUG_FMT_(msg, ...)         RLOG_FMT_DO(LOG_DEBUG, msg, __VA_ARGS__)
 #define DEBUG_N_(singular, plural, count)            RLOG_N_DO(LOG_DEBUG, singular, plural, count)
 #define DEBUG_NFMT_(singular, plural, count, ...)    RLOG_NFMT_DO(LOG_DEBUG, singular, plural, count, __VA_ARGS__)
+
+// USER_ macros write only to the terminal (stderr), never to syslog.
+// Use these for hints and supplementary messages directed at the user.
+#define RLOG_USER_DO(msg) \
+    do { \
+        ::rlog::report(LOG_WARNING, "{}", _(msg)); \
+    } while (0)
+
+#define RLOG_USER_FMT_DO(msg, ...) \
+    do { \
+        [&](auto const&... rlog_tmp_args) { \
+            auto rlog_args = ::std::make_format_args(rlog_tmp_args...); \
+            ::rlog::report(LOG_WARNING, "{}", \
+                ::std::vformat(RLOG_GETTEXT(msg), rlog_args)); \
+        }(__VA_ARGS__); \
+    } while (0)
+
+#define USER_(msg)                   RLOG_USER_DO(msg)
+#define USER_FMT_(msg, ...)          RLOG_USER_FMT_DO(msg, __VA_ARGS__)
