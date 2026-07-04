@@ -28,7 +28,7 @@ void test_detail_helpers() {
     std::cout << "Testing detail helpers..." << std::endl;
     
     std::string test_str = "hello";
-    const char* test_char = "world";
+    [[maybe_unused]] const char* test_char = "world";
     
     assert(std::strcmp(rlog::detail::to_c_str(test_str), "hello") == 0);
     assert(std::strcmp(rlog::detail::to_c_str(test_char), "world") == 0);
