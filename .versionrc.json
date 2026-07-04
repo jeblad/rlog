@@ -1,4 +1,5 @@
 {
+  "preMajor": false,
   "scripts": {
     "postbump": "cmake -B build -S . && git add include/rlog/rlog.hpp"
   }
