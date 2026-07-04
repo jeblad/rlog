@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.0.8](https://github.com/jeblad/rlog/compare/v0.0.7...v0.0.8) (2026-07-04)
+
+
+### Bug Fixes
+
+* **release:** add preMajor: false to .versionrc.json ([f706b7d](https://github.com/jeblad/rlog/commit/f706b7d5a5f3e68a23840828b6d4f7d72aa38446))
+
 ## [0.0.7](https://github.com/jeblad/rlog/compare/v0.0.6...v0.0.7) (2026-07-04)
 
 
