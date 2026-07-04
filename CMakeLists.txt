@@ -25,9 +25,17 @@ if(Git_FOUND)
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
 
-    # Only use GIT_VERSION for the full version string if it is not "dirty".
-    # This prevents the release commit from being tagged as "dirty" in the header.
-    if(GIT_VERSION AND NOT GIT_VERSION MATCHES "dirty")
+    # Use git describe output only when its embedded tag matches package.json version.
+    # Exact tag → clean release header. Ahead-of-tag → local dev header with hash.
+    # When package.json is bumped ahead of the last tag (release commit in progress),
+    # the versions differ and we fall back to v${PROJECT_VERSION} so the tagged
+    # commit on GitHub always gets a clean version string.
+    if(GIT_VERSION MATCHES "^v([0-9]+\\.[0-9]+\\.[0-9]+)")
+        set(GIT_TAG_VER "${CMAKE_MATCH_1}")
+    else()
+        set(GIT_TAG_VER "")
+    endif()
+    if(GIT_TAG_VER VERSION_EQUAL PROJECT_VERSION AND NOT GIT_VERSION MATCHES "dirty")
         set(RLOG_FULL_VERSION "${GIT_VERSION}")
     endif()
 
