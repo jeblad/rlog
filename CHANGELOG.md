@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.1](https://github.com/jeblad/rlog/compare/v0.1.0...v0.1.1) (2026-07-04)
+
+
+### Bug Fixes
+
+* **tests:** suppress unused-variable warning for assert-only variable ([a0bdd94](https://github.com/jeblad/rlog/commit/a0bdd946353bddc59c0f6d0cf6432c061142652e))
+
 ## [0.1.0](https://github.com/jeblad/rlog/compare/v0.0.8...v0.1.0) (2026-07-04)
 
 ## [0.0.8](https://github.com/jeblad/rlog/compare/v0.0.7...v0.0.8) (2026-07-04)
