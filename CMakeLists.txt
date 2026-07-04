@@ -17,28 +17,6 @@ set(RLOG_VERSION_MINOR ${PROJECT_VERSION_MINOR})
 set(RLOG_VERSION_PATCH ${PROJECT_VERSION_PATCH})
 
 if(Git_FOUND)
-    execute_process(
-        COMMAND ${GIT_EXECUTABLE} describe --tags --always --dirty
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        OUTPUT_VARIABLE GIT_VERSION
-        ERROR_QUIET
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-
-    # Use git describe output only when its embedded tag matches package.json version.
-    # Exact tag → clean release header. Ahead-of-tag → local dev header with hash.
-    # When package.json is bumped ahead of the last tag (release commit in progress),
-    # the versions differ and we fall back to v${PROJECT_VERSION} so the tagged
-    # commit on GitHub always gets a clean version string.
-    if(GIT_VERSION MATCHES "^v([0-9]+\\.[0-9]+\\.[0-9]+)")
-        set(GIT_TAG_VER "${CMAKE_MATCH_1}")
-    else()
-        set(GIT_TAG_VER "")
-    endif()
-    if(GIT_TAG_VER VERSION_EQUAL PROJECT_VERSION AND NOT GIT_VERSION MATCHES "dirty")
-        set(RLOG_FULL_VERSION "${GIT_VERSION}")
-    endif()
-
     # Git Hook Automation
     set(HOOK_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/scripts/pre-commit.sh")
     set(HOOK_DEST "${CMAKE_CURRENT_SOURCE_DIR}/.git/hooks/pre-commit")
