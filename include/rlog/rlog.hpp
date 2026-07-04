@@ -295,6 +295,43 @@ namespace rlog {
 
 // --- SECTION 4: Logging (Macros & Syslog) ---
 
+namespace rlog {
+    /**
+     * @brief Chainable log entry. The primary message is sent to syslog and the
+     * terminal immediately on construction; each .hint() prints to the terminal only.
+     * Discard the return value to use exactly like the old void macros.
+     */
+    class Bundle {
+        int level_;
+    public:
+        // Primary constructor: syslog (English) + terminal (translated).
+        Bundle(int level, std::string_view syslog_msg, std::string_view term_msg)
+            : level_(level) {
+            ::syslog(level, "%s: %s",
+                Context::instance().get_syslog_prefix().c_str(),
+                std::string(syslog_msg).c_str());
+            report(level, "{}", term_msg);
+        }
+
+        // Terminal-only constructor: for USER_ macros (no syslog).
+        Bundle(int level, std::string_view term_msg)
+            : level_(level) {
+            report(level, "{}", term_msg);
+        }
+
+        Bundle& hint(std::string_view msg) {
+            report(level_, "{}", msg);
+            return *this;
+        }
+
+        template <typename... Args>
+        Bundle& hint_fmt(std::string_view fmt, const Args&... args) {
+            report(level_, "{}", ::std::vformat(fmt, ::std::make_format_args(args...)));
+            return *this;
+        }
+    };
+}
+
 namespace rlog::detail {
     /**
      * @brief Helper to normalize string types for C-style API calls like syslog.
@@ -312,49 +349,33 @@ namespace rlog::detail {
 }
 
 #define RLOG_DO(level, msg) \
-    do { \
-        ::syslog((level), "%s: %s", \
-            ::rlog::Context::instance().get_syslog_prefix().c_str(), \
-            ::rlog::detail::to_c_str(msg)); \
-        ::rlog::report((level), "{}", _(msg)); \
-    } while (0)
+    ::rlog::Bundle((level), (msg), _(msg))
 
 #define RLOG_FMT_DO(level, msg, ...) \
-    do { \
-        [&](auto const&... rlog_tmp_args) { \
-            auto rlog_args = ::std::make_format_args(rlog_tmp_args...); \
-            /* 1. Log original English to syslog */ \
-            ::syslog((level), "%s: %s", \
-                ::rlog::Context::instance().get_syslog_prefix().c_str(), \
-                ::std::vformat((msg), rlog_args).c_str()); \
-            /* 2. Log translated to terminal */ \
-            ::rlog::report((level), "{}", \
-                ::std::vformat(RLOG_GETTEXT(msg), rlog_args)); \
-        }(__VA_ARGS__); \
-    } while (0)
+    [&](auto const&... rlog_tmp_args) -> ::rlog::Bundle { \
+        auto rlog_args = ::std::make_format_args(rlog_tmp_args...); \
+        return ::rlog::Bundle((level), \
+            ::std::vformat((msg), rlog_args), \
+            ::std::vformat(RLOG_GETTEXT(msg), rlog_args)); \
+    }(__VA_ARGS__)
 
 #define RLOG_N_DO(level, singular, plural, count) \
-    do { \
+    [&]() -> ::rlog::Bundle { \
         auto rlog_tmp_n = (count); \
         const char* eng_msg = (rlog_tmp_n == 1) ? (singular) : (plural); \
-        ::syslog((level), "%s: %s", \
-            ::rlog::Context::instance().get_syslog_prefix().c_str(), \
-            ::rlog::detail::to_c_str(eng_msg)); \
-        ::rlog::report((level), "{}", n_((singular), (plural), (rlog_tmp_n))); \
-    } while (0)
+        return ::rlog::Bundle((level), eng_msg, \
+            n_((singular), (plural), (rlog_tmp_n))); \
+    }()
 
 #define RLOG_NFMT_DO(level, singular, plural, count, ...) \
-    do { \
-        auto rlog_tmp_n = static_cast<std::size_t>(count); \
-        [&](auto const&... rlog_tmp_args) { \
-            auto rlog_args = ::std::make_format_args(rlog_tmp_args...); \
-            const char* eng_fmt = (rlog_tmp_n == 1) ? (singular) : (plural); \
-            ::syslog((level), "%s: %s", \
-                ::rlog::Context::instance().get_syslog_prefix().c_str(), \
-                ::std::vformat(eng_fmt, rlog_args).c_str()); \
-            ::rlog::report((level), "{}", ::rlog::i18n::vnformat(singular, plural, rlog_tmp_n, rlog_args)); \
-        }(__VA_ARGS__); \
-    } while (0)
+    [&](auto const&... rlog_tmp_args) -> ::rlog::Bundle { \
+        auto rlog_tmp_n = static_cast<::std::size_t>(count); \
+        auto rlog_args = ::std::make_format_args(rlog_tmp_args...); \
+        const char* eng_fmt = (rlog_tmp_n == 1) ? (singular) : (plural); \
+        return ::rlog::Bundle((level), \
+            ::std::vformat(eng_fmt, rlog_args), \
+            ::rlog::i18n::vnformat(singular, plural, rlog_tmp_n, rlog_args)); \
+    }(__VA_ARGS__)
 
 // --- Level-specific macros (Mapping to original names) ---
 
@@ -399,20 +420,16 @@ namespace rlog::detail {
 #define DEBUG_NFMT_(singular, plural, count, ...)    RLOG_NFMT_DO(LOG_DEBUG, singular, plural, count, __VA_ARGS__)
 
 // USER_ macros write only to the terminal (stderr), never to syslog.
-// Use these for hints and supplementary messages directed at the user.
+// Like all logging macros, they return Bundle so .hint() can be chained.
 #define RLOG_USER_DO(msg) \
-    do { \
-        ::rlog::report(LOG_WARNING, "{}", _(msg)); \
-    } while (0)
+    ::rlog::Bundle(LOG_WARNING, _(msg))
 
 #define RLOG_USER_FMT_DO(msg, ...) \
-    do { \
-        [&](auto const&... rlog_tmp_args) { \
-            auto rlog_args = ::std::make_format_args(rlog_tmp_args...); \
-            ::rlog::report(LOG_WARNING, "{}", \
-                ::std::vformat(RLOG_GETTEXT(msg), rlog_args)); \
-        }(__VA_ARGS__); \
-    } while (0)
+    [&](auto const&... rlog_tmp_args) -> ::rlog::Bundle { \
+        auto rlog_args = ::std::make_format_args(rlog_tmp_args...); \
+        return ::rlog::Bundle(LOG_WARNING, \
+            ::std::vformat(RLOG_GETTEXT(msg), rlog_args)); \
+    }(__VA_ARGS__)
 
 #define USER_(msg)                   RLOG_USER_DO(msg)
 #define USER_FMT_(msg, ...)          RLOG_USER_FMT_DO(msg, __VA_ARGS__)
