@@ -1,6 +1,6 @@
 {
   "name": "rlog",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "A C++20 localization and reporting utility (header-only).",
   "author": "John Erling Blad",
   "license": "SEE LICENSE IN LICENSE.txt",
