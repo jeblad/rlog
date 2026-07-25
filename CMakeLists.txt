@@ -115,6 +115,13 @@ if(RLOG_BUILD_TESTS)
     )
     
     add_test(NAME rlog_unit_tests COMMAND test_rlog)
+
+    if(UNIX)
+        add_test(NAME rlog_xgettext_keywords_sync
+            COMMAND bash "${CMAKE_CURRENT_SOURCE_DIR}/scripts/check-xgettext-keywords.sh"
+                "${CMAKE_CURRENT_SOURCE_DIR}/rlog.hpp.in"
+                "${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists.txt")
+    endif()
 endif()
 
 install(TARGETS rlog EXPORT rlogTargets)
