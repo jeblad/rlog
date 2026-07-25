@@ -91,26 +91,20 @@ For extensions or plugins that use their own translation domain, define `RLOG_GE
 
 ### Message Extraction
 
-Extracting strings for translation with `xgettext` requires explicitly specifying the keywords for the various `rlog` macros. Because these macros handle both singular and plural forms, the extraction command must identify which arguments contain the translatable text—typically indicated by `:1` for single strings or `:1,2` for plural pairs.
+Extracting strings for translation with `xgettext` requires the keyword and format-flag arguments matching the `rlog` macros. Rather than hand-maintaining that list here (it drifts out of sync with `rlog.hpp.in` otherwise), read the canonical, up-to-date list from the `rlog` CMake target's `RLOG_XGETTEXT_ARGS` property:
 
-Run the following command to generate a .pot file:
+```cmake
+get_target_property(RLOG_XGETTEXT_ARGS rlog::rlog RLOG_XGETTEXT_ARGS)
 
-```bash
-xgettext --from-code=UTF-8 --language=C++ \
---keyword=_ --keyword=N_ \
---keyword=n_:1,2 \
---keyword=fmt_:1 \
---keyword=nfmt_:1,2 \
---keyword=EMERGENCY_:1 --keyword=EMERGENCY_FMT_:1 --keyword=EMERGENCY_N_:1,2 --keyword=EMERGENCY_NFMT_:1,2 \
---keyword=ALERT_:1 --keyword=ALERT_FMT_:1 --keyword=ALERT_N_:1,2 --keyword=ALERT_NFMT_:1,2 \
---keyword=CRITICAL_:1 --keyword=CRITICAL_FMT_:1 --keyword=CRITICAL_N_:1,2 --keyword=CRITICAL_NFMT_:1,2 \
---keyword=ERROR_:1 --keyword=ERROR_FMT_:1 --keyword=ERROR_N_:1,2 --keyword=ERROR_NFMT_:1,2 \
---keyword=WARNING_:1 --keyword=WARNING_FMT_:1 --keyword=WARNING_N_:1,2 --keyword=WARNING_NFMT_:1,2 \
---keyword=NOTICE_:1 --keyword=NOTICE_FMT_:1 --keyword=NOTICE_N_:1,2 --keyword=NOTICE_NFMT_:1,2 \
---keyword=INFO_:1 --keyword=INFO_FMT_:1 --keyword=INFO_N_:1,2 --keyword=INFO_NFMT_:1,2 \
---keyword=DEBUG_:1 --keyword=DEBUG_FMT_:1 --keyword=DEBUG_N_:1,2 --keyword=DEBUG_NFMT_:1,2 \
--o messages.pot main.cpp
+add_custom_target(pot
+    COMMAND xgettext --from-code=UTF-8 --language=C++
+        ${RLOG_XGETTEXT_ARGS}
+        -o messages.pot main.cpp
+    VERBATIM
+)
 ```
+
+`RLOG_XGETTEXT_ARGS` covers every macro (`_`, `N_`, `fmt_`, `nfmt_`, the per-level `EMERGENCY_` through `DEBUG_` variants, and `USER_`/`USER_FMT_`) along with the `--flag` entries needed to validate their format placeholders.
 
 ## Building and Testing
 
