@@ -90,6 +90,10 @@ set_property(TARGET rlog PROPERTY RLOG_XGETTEXT_ARGS
     "--flag=DEBUG_FMT_:1:csharp-format"     "--flag=DEBUG_NFMT_:1:csharp-format"     "--flag=DEBUG_NFMT_:2:csharp-format"
 )
 
+# Without this, RLOG_XGETTEXT_ARGS is dropped from the target install(EXPORT ...)
+# generates, so consumers using find_package(rlog) would get ARGS-NOTFOUND.
+set_property(TARGET rlog PROPERTY EXPORT_PROPERTIES RLOG_XGETTEXT_ARGS)
+
 # Dependencies
 find_package(Intl REQUIRED)
 target_link_libraries(rlog INTERFACE ${Intl_LIBRARIES})
