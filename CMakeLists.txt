@@ -59,6 +59,37 @@ target_include_directories(rlog INTERFACE
     $<INSTALL_INTERFACE:include>
 )
 
+# xgettext arguments derived from the macros defined in rlog.hpp.
+# Consumers retrieve this via get_target_property(... rlog RLOG_XGETTEXT_ARGS)
+# and pass it to their CONFIGURE_GETTEXT / xgettext call.
+set_property(TARGET rlog PROPERTY RLOG_XGETTEXT_ARGS
+    "--keyword=_"
+    "--keyword=N_:1"
+    "--keyword=n_:1,2"
+    "--keyword=fmt_:1"
+    "--keyword=nfmt_:1,2"
+    "--keyword=EMERGENCY_:1" "--keyword=EMERGENCY_FMT_:1" "--keyword=EMERGENCY_N_:1,2" "--keyword=EMERGENCY_NFMT_:1,2"
+    "--keyword=ALERT_:1"     "--keyword=ALERT_FMT_:1"     "--keyword=ALERT_N_:1,2"     "--keyword=ALERT_NFMT_:1,2"
+    "--keyword=CRITICAL_:1"  "--keyword=CRITICAL_FMT_:1"  "--keyword=CRITICAL_N_:1,2"  "--keyword=CRITICAL_NFMT_:1,2"
+    "--keyword=ERROR_:1"     "--keyword=ERROR_FMT_:1"     "--keyword=ERROR_N_:1,2"     "--keyword=ERROR_NFMT_:1,2"
+    "--keyword=WARNING_:1"   "--keyword=WARNING_FMT_:1"   "--keyword=WARNING_N_:1,2"   "--keyword=WARNING_NFMT_:1,2"
+    "--keyword=NOTICE_:1"    "--keyword=NOTICE_FMT_:1"    "--keyword=NOTICE_N_:1,2"    "--keyword=NOTICE_NFMT_:1,2"
+    "--keyword=INFO_:1"      "--keyword=INFO_FMT_:1"      "--keyword=INFO_N_:1,2"      "--keyword=INFO_NFMT_:1,2"
+    "--keyword=DEBUG_:1"     "--keyword=DEBUG_FMT_:1"     "--keyword=DEBUG_N_:1,2"     "--keyword=DEBUG_NFMT_:1,2"
+    "--keyword=USER_:1"      "--keyword=USER_FMT_:1"
+    "--flag=fmt_:1:csharp-format"
+    "--flag=nfmt_:1:csharp-format"  "--flag=nfmt_:2:csharp-format"
+    "--flag=USER_FMT_:1:csharp-format"
+    "--flag=EMERGENCY_FMT_:1:csharp-format" "--flag=EMERGENCY_NFMT_:1:csharp-format" "--flag=EMERGENCY_NFMT_:2:csharp-format"
+    "--flag=ALERT_FMT_:1:csharp-format"     "--flag=ALERT_NFMT_:1:csharp-format"     "--flag=ALERT_NFMT_:2:csharp-format"
+    "--flag=CRITICAL_FMT_:1:csharp-format"  "--flag=CRITICAL_NFMT_:1:csharp-format"  "--flag=CRITICAL_NFMT_:2:csharp-format"
+    "--flag=ERROR_FMT_:1:csharp-format"     "--flag=ERROR_NFMT_:1:csharp-format"     "--flag=ERROR_NFMT_:2:csharp-format"
+    "--flag=WARNING_FMT_:1:csharp-format"   "--flag=WARNING_NFMT_:1:csharp-format"   "--flag=WARNING_NFMT_:2:csharp-format"
+    "--flag=NOTICE_FMT_:1:csharp-format"    "--flag=NOTICE_NFMT_:1:csharp-format"    "--flag=NOTICE_NFMT_:2:csharp-format"
+    "--flag=INFO_FMT_:1:csharp-format"      "--flag=INFO_NFMT_:1:csharp-format"      "--flag=INFO_NFMT_:2:csharp-format"
+    "--flag=DEBUG_FMT_:1:csharp-format"     "--flag=DEBUG_NFMT_:1:csharp-format"     "--flag=DEBUG_NFMT_:2:csharp-format"
+)
+
 # Dependencies
 find_package(Intl REQUIRED)
 target_link_libraries(rlog INTERFACE ${Intl_LIBRARIES})
