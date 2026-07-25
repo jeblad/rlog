@@ -82,7 +82,7 @@ void test_macros_compilation() {
 
             // These call syslog. We verify they compile and handle dynamic context.
             NOTICE_("Testing notice macro");
-            INFO_FMT_("Testing info fmt: {}", 42);
+            INFO_FMT_("Testing info fmt: {0}", 42);
             ERROR_N_("Singular error", "Plural errors", 1);
         }
 

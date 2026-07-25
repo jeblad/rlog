@@ -48,7 +48,7 @@ int main() {
     NOTICE_("Service initialized");
     
     // This will not be logged (INFO is below NOTICE)
-    INFO_FMT_("Connected to endpoint: {}", "127.0.0.1");
+    INFO_FMT_("Connected to endpoint: {0}", "127.0.0.1");
     
     {
         // RAII guard for a sub-task
@@ -76,7 +76,7 @@ size_t count = 3;
 NOTICE_N_("Found one file", "Found several files", count);
 
 // Formatted localized plural forms
-INFO_NFMT_("Processed {} byte", "Processed {} bytes", count, count);
+INFO_NFMT_("Processed {0} byte", "Processed {0} bytes", count, count);
 ```
 
 ### Plugin and Domain Support
