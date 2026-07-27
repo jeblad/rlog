@@ -1,0 +1,17 @@
+{
+    "C_Cpp.default.cppStandard": "c++20",
+    "C_Cpp.codeAnalysis.clangTidy.enabled": true,
+    "C_Cpp.codeAnalysis.clangTidy.codeAction.formatFixes": true,
+    "C_Cpp.codeAnalysis.clangTidy.args": ["-std=c++20"],
+    "cpplint.extensions": ["cpp", "hpp", "cc", "cxx", "h", "h++", "hxx", "c", "c++"],
+    "cpplint.cpplintPath": "/home/john/.local/bin/cpplint",
+    "cpplint.filters": ["-build/c++17"],
+    "cpplint.headers": ["h++", "hxx", "hpp", "h"],
+    "cppcheck-official.arguments": "--language=c++ --std=c++20 --inline-suppr --addon=naming --addon=findcasts --addon=misc --project=${workspaceFolder}/build/compile_commands.json",
+    "files.associations": {
+        "*.h": "cpp"
+    },
+    "clang-tidy.executable": "/usr/bin/clang-tidy",
+    "clang-tidy.buildPath": "${workspaceFolder}/build",
+    "clang-tidy.compilerArgs": ["-std=c++20"]
+}

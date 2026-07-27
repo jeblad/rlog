@@ -1,2 +1,4 @@
-# Exclude the generated header from AI editing to prevent loss of manual changes
+# Exclude the generated header from AI editing: it is regenerated from
+# rlog.hpp.in on every CMake configure, so edits made directly here are
+# silently discarded on the next build. Edit rlog.hpp.in instead.
 include/rlog/rlog.hpp

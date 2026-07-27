@@ -78,9 +78,11 @@ void test_macros_compilation() {
 
         {
             rlog::ContextGuard sub_ctx("worker-1");
-            assert(rlog::Context::instance().get_syslog_prefix() == "test-app:worker-1");
+            assert(rlog::Context::instance().get_syslog_prefix() ==
+                   "test-app:worker-1");
 
-            // These call syslog. We verify they compile and handle dynamic context.
+            // These call syslog. We verify they compile and handle dynamic
+            // context.
             NOTICE_("Testing notice macro");
             INFO_FMT_("Testing info fmt: {0}", 42);
             ERROR_N_("Singular error", "Plural errors", 1);
