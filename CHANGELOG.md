@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.2.0](https://github.com/jeblad/rlog/compare/v0.1.1...v0.2.0) (2026-07-27)
+
+
+### Features
+
+* **cmake:** expose xgettext keyword args via RLOG_XGETTEXT_ARGS property ([32b2859](https://github.com/jeblad/rlog/commit/32b285945f238a8ca7a0338bd9e5d2dece6176c6))
+
+
+### Bug Fixes
+
+* **cmake:** export RLOG_XGETTEXT_ARGS via EXPORT_PROPERTIES ([2024661](https://github.com/jeblad/rlog/commit/20246614e6f4de55bb09d7d53d6ad115c82959bd))
+* **i18n:** use numeric placeholder indices in FMT_/NFMT_ examples ([1a48aef](https://github.com/jeblad/rlog/commit/1a48aef4244c96633b31255098662c7c2fc77e31))
+
 ## [0.1.1](https://github.com/jeblad/rlog/compare/v0.1.0...v0.1.1) (2026-07-04)
 
 

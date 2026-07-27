@@ -4,7 +4,7 @@
  *
  * RLog – A C++20 Localization and Reporting Utility
  * Combined and generalized version of i18n, reporting, and logging.
- * Version v0.1.1
+ * Version v0.2.0
  * Copyright 2026 John Erling Blad
  *
  * This program is free software: you can redistribute it and/or modify
@@ -17,9 +17,9 @@
 #pragma once
 
 #define RLOG_VERSION_MAJOR 0
-#define RLOG_VERSION_MINOR 1
-#define RLOG_VERSION_PATCH 1
-#define RLOG_VERSION "v0.1.1"
+#define RLOG_VERSION_MINOR 2
+#define RLOG_VERSION_PATCH 0
+#define RLOG_VERSION "v0.2.0"
 
 #include <libintl.h>
 #include <syslog.h>
