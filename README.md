@@ -136,6 +136,13 @@ This project uses a git `pre-commit` hook to keep the `rlog.hpp` version string 
 The hook is automatically installed into your local `.git/hooks` directory when you run the `cmake` configuration command. 
 This ensures that every commit contains an updated and tested header file.
 
+## Code Standards
+
+Code reviews for this project follow **The Art of Readable Code** (Boswell &
+Foucher, 2011) as a general readability baseline, layered with the stricter
+**"The Power of Ten"** safety-critical rules (Holzmann, *IEEE Computer*, 2006)
+on top. See `AGENTS.md` for the full record, including how the two compose.
+
 ## License
 
 This project is licensed under the **GNU General Public License v3.0 Only**. See the `LICENSE` file for details.

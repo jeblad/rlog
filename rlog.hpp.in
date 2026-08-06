@@ -86,7 +86,7 @@
  */
 namespace rlog::i18n {
     /**
-     * @brief Translates and formats a string using std::format.
+     * @brief Translates and formats a string using std::vformat.
      * @tparam Args Variadic types of arguments to be formatted.
      * @param format_id The English message identifier (the format string).
      * @param args The values to be inserted into the format string.
@@ -99,7 +99,7 @@ namespace rlog::i18n {
     }
 
     /**
-     * @brief Translates and formats a pluralized string using std::format.
+     * @brief Translates and formats a pluralized string using std::vformat.
      * @tparam Args Variadic types of arguments to be formatted.
      * @param singular The English singular form.
      * @param plural The English plural form.
